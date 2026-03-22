@@ -61,14 +61,6 @@ export default function App() {
 
   // Preload and unlock audio
   useEffect(() => {
-    // Attempt to lock orientation to landscape
-    const screenOrientation = screen.orientation as any;
-    if (screenOrientation && screenOrientation.lock) {
-      screenOrientation.lock('landscape').catch(() => {
-        console.warn("Orientation lock failed. This is common in browsers without user gesture.");
-      });
-    }
-
     jumpscareAudioRef.current = new Audio(AUDIO_URLS.JUMPSCARE);
     victoryAudioRef.current = new Audio(AUDIO_URLS.VICTORY);
     psstAudioRef.current = new Audio(AUDIO_URLS.PSST);
@@ -589,14 +581,25 @@ export default function App() {
     setGameStarted(false);
   };
 
-  const handleStartGame = () => {
-    // Attempt to lock orientation to landscape on user gesture
-    const screenOrientation = screen.orientation as any;
-    if (screenOrientation && screenOrientation.lock) {
-      screenOrientation.lock('landscape').catch(() => {
-        console.warn("Orientation lock failed on start.");
-      });
+  const handleStartGame = async () => {
+    try {
+      // 1. Request fullscreen first (most mobile browsers require this to lock orientation)
+      const docEl = document.documentElement as any;
+      if (docEl.requestFullscreen) {
+        await docEl.requestFullscreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        await docEl.webkitRequestFullscreen(); // Safari fallback
+      }
+
+      // 2. Lock the orientation to landscape
+      const screenOrientation = screen.orientation as any;
+      if (screenOrientation && screenOrientation.lock) {
+        await screenOrientation.lock('landscape');
+      }
+    } catch (error) {
+      console.warn("Orientation lock failed. The user might need to rotate manually or is on a device that doesn't support it.", error);
     }
+    
     setGameStarted(true);
   };
 
