@@ -36,7 +36,6 @@ export default function App() {
   const [isSecretWin, setIsSecretWin] = useState(false);
   const [maze, setMaze] = useState<number[][]>([]);
   const [doorPos, setDoorPos] = useState<Point>({ x: 0, y: 0 });
-  const [isPortrait, setIsPortrait] = useState(false);
   const [psstActive, setPsstActive] = useState(false);
   const [knockingActive, setKnockingActive] = useState(false);
   const [cellSize, setCellSize] = useState(40);
@@ -62,12 +61,6 @@ export default function App() {
 
   // Preload and unlock audio
   useEffect(() => {
-    const checkOrientation = () => {
-      setIsPortrait(window.innerHeight > window.innerWidth);
-    };
-    window.addEventListener('resize', checkOrientation);
-    checkOrientation();
-
     // Attempt to lock orientation to landscape
     const screenOrientation = screen.orientation as any;
     if (screenOrientation && screenOrientation.lock) {
@@ -107,7 +100,6 @@ export default function App() {
     window.addEventListener('touchstart', unlockAudio);
 
     return () => {
-      window.removeEventListener('resize', checkOrientation);
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('touchstart', unlockAudio);
     };
@@ -597,15 +589,16 @@ export default function App() {
     setGameStarted(false);
   };
 
-  if (isPortrait) {
-    return (
-      <div className="fixed inset-0 bg-black z-[1000] flex flex-col items-center justify-center text-white p-8 text-center font-mono">
-        <RefreshCw className="w-12 h-12 mb-4 animate-spin opacity-50" />
-        <h2 className="text-xl mb-2 uppercase tracking-widest">Please Rotate Device</h2>
-        <p className="text-xs opacity-50">This game is best played in landscape mode.</p>
-      </div>
-    );
-  }
+  const handleStartGame = () => {
+    // Attempt to lock orientation to landscape on user gesture
+    const screenOrientation = screen.orientation as any;
+    if (screenOrientation && screenOrientation.lock) {
+      screenOrientation.lock('landscape').catch(() => {
+        console.warn("Orientation lock failed on start.");
+      });
+    }
+    setGameStarted(true);
+  };
 
   if (!gameStarted) {
     return (
@@ -631,7 +624,7 @@ export default function App() {
           </div>
         </div>
         <button 
-          onClick={() => setGameStarted(true)}
+          onClick={handleStartGame}
           className="px-12 py-4 bg-red-900/20 border border-red-500/50 hover:bg-red-500 hover:text-black transition-all duration-500 rounded uppercase tracking-widest"
         >
           Enter Floor 1
